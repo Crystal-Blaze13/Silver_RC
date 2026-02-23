@@ -50,7 +50,7 @@ df = pd.read_csv(DATA_FILE, index_col=0, parse_dates=True)
 price_weekly = df['silver'].dropna()
 
 print(f"Loaded {len(price_weekly)} weekly observations")
-print(f"Date range: {price_weekly.index[0].date()} → {price_weekly.index[-1].date()}")
+print(f"Date range: {price_weekly.index[0].date()} -> {price_weekly.index[-1].date()}")
 
 # Save silver weekly for later steps
 price_weekly.to_csv("silver_weekly.csv", header=True)
@@ -84,8 +84,23 @@ print(f"\nEstimated K = {K} IMFs (N={N}, log2(N)={np.log2(N):.2f})")
 print(f"\nRunning VMD (K={K})... this takes ~30-60 seconds...")
 u, u_hat, omega = VMD(signal_array, ALPHA, TAU, K, DC, INIT, TOL)
 
+print(f"[DEBUG] VMD output shape: u.shape={u.shape}, omega.shape={omega.shape}")
+
+# Handle different vmdpy return formats
+if u.ndim == 3:
+    # vmdpy returns (iterations, K, N) - take the last iteration
+    print(f"[DEBUG] u is 3D, taking last iteration")
+    u = u[-1]
+
+# Handle omega shape - if it's (iterations, K), take the last row
+if omega.ndim == 2:
+    print(f"[DEBUG] omega is 2D, taking last row")
+    omega = omega[-1]
+
+print(f"[DEBUG] After shape fix: u.shape={u.shape}, omega.shape={omega.shape}")
+
 # Sort IMFs from lowest to highest frequency (like paper: IMF1=trend, IMFn=noise)
-sort_idx = np.argsort(omega[:, -1])
+sort_idx = np.argsort(omega)
 u_sorted = u[sort_idx, :]
 
 print(f"VMD complete. IMF matrix shape: {u_sorted.shape}")

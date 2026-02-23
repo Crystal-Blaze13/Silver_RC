@@ -1,0 +1,10 @@
+IMF,Complexity,Alpha,N_selected,silver_lag_1,silver_lag_2,silver_lag_3,silver_lag_4,silver_lag_5,gold,brent,dxy,sp500,vix,trends_raw
+IMF1,Low,0.061569,5,,,,,,✓,,✓,✓,✓,✓
+IMF2,Low,1.915375,0,,,,,,,,,,,
+IMF3,Low,0.000343,11,✓,✓,✓,✓,✓,✓,✓,✓,✓,✓,✓
+IMF4,High,0.005467,7,✓,✓,,,✓,,✓,✓,,✓,✓
+IMF5,High,0.000644,11,✓,✓,✓,✓,✓,✓,✓,✓,✓,✓,✓
+IMF6,Low,0.000803,10,✓,✓,,✓,✓,✓,✓,✓,✓,✓,✓
+IMF7,High,0.001053,11,✓,✓,✓,✓,✓,✓,✓,✓,✓,✓,✓
+IMF8,High,0.000694,11,✓,✓,✓,✓,✓,✓,✓,✓,✓,✓,✓
+IMF9,High,0.000728,9,✓,✓,✓,✓,✓,✓,,✓,,✓,✓

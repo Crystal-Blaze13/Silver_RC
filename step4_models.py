@@ -116,7 +116,11 @@ def arima_forecast(train_series, n_steps):
     fitted, order = fit_arima(history)
     for _ in range(n_steps):
         forecast = fitted.forecast(steps=1)
-        preds.append(float(forecast.iloc[0]))
+        # Handle both DataFrame and array-like forecast objects
+        if hasattr(forecast, 'iloc'):
+            preds.append(float(forecast.iloc[0]))
+        else:
+            preds.append(float(forecast[0]) if len(forecast) > 0 else float(forecast))
         # Update history (rolling)
         history.append(preds[-1])
         fitted = ARIMA(history, order=order).fit()
