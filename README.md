@@ -1,6 +1,7 @@
-# Silver Price Forecasting Pipeline (VMD + Entropy + LASSO + ARIMA/LSTM + Trading)
+# Silver Price Forecasting Pipeline — Indian Market (VMD + Entropy + LASSO + ARIMA/LSTM + Trading)
 
-This repository implements a weekly silver-price forecasting pipeline and evaluation workflow:
+This repository implements a weekly silver-price forecasting pipeline for the **Indian market**
+over a **25-year window (2000–2026)**, replicating the methodology of Liu et al. (2025).
 
 - **Decomposition:** VMD (Variational Mode Decomposition)
 - **Complexity split:** Approximate Entropy (low vs high complexity IMFs)
@@ -8,15 +9,24 @@ This repository implements a weekly silver-price forecasting pipeline and evalua
 - **Forecasting:** Hybrid ARIMA/LSTM + single-model/decomposition benchmarks
 - **Evaluation:** Error metrics + Diebold–Mariano test + trading simulation
 
+### Professor's extensions (v2)
+| Extension | Detail |
+|-----------|--------|
+| 25-year data window | 2000-01-01 → 2026-03-14 |
+| Indian market focus | S&P 500 → Nifty 50 (`^NSEI`); DXY → USD/INR (`USDINR=X`) |
+| 12 NLP keywords | 12 India-specific silver Google Trends keywords combined into one index |
+
 ---
 
 ## 1) Project files
 
 ### Data collection / preparation
-- `download_financial_data.py` — downloads market series (`silver`, `gold`, `brent`, `dxy`, `sp500`) from Yahoo Finance.
-- `fetch_vix.py` — downloads VIX from Yahoo Finance.
-- `merge.py` — loads files from `financial_data/` and merges by date (currently prints merged shape/head).
-- `test.py` — builds a weekly **returns** dataset from prices + Google Trends (`merged_weekly_dataset.csv`).
+- `download_financial_data.py` — downloads `silver`, `gold`, `brent`, **`nifty50`**, **`usdinr`** from Yahoo Finance (25-year window).
+- `fetch_vix.py` — downloads VIX from Yahoo Finance (25-year window).
+- `fetch_trends.py` — downloads **12 India-specific silver keywords** from Google Trends via pytrends, combines into `trends_india.csv`.
+- `build_master.py` — merges all sources into `master_weekly_prices.csv` with Indian columns.
+- `merge.py` — legacy merge helper (not used in main pipeline).
+- `test.py` — legacy returns dataset builder (not used in main pipeline).
 
 ### Main modelling pipeline
 - `step1_vmd_decompose.py`
@@ -26,43 +36,39 @@ This repository implements a weekly silver-price forecasting pipeline and evalua
 - `step5_dmtest.py`
 - `step6_trading.py`
 
-### Existing core dataset
-- `master_weekly_prices.csv` (columns: `date,silver,gold,brent,dxy,sp500,vix,trends_raw`)
+### Core dataset
+- `master_weekly_prices.csv` (columns: `date,silver,gold,brent,usdinr,nifty50,vix,trends_raw`)
 
 ---
 
 ## 2) Environment setup
 
 ```bash
-pip install vmdpy pandas numpy matplotlib scipy scikit-learn statsmodels torch yfinance
+pip install vmdpy pandas numpy matplotlib scipy scikit-learn statsmodels torch yfinance pytrends
 ```
-
-> You already installed the key dependencies, so this is just for reproducibility.
 
 ---
 
-## 3) Recommended run path (using existing `master_weekly_prices.csv`)
+## 3) Full run path (data download + modelling pipeline)
 
-If you only want to run the paper-style modelling pipeline:
+### Step A — Download market data (25 years, Indian market)
+
+```bash
+python download_financial_data.py    # silver, gold, brent, nifty50, usdinr
+python fetch_vix.py                  # VIX
+python fetch_trends.py               # 12 India silver Google Trends keywords → trends_india.csv
+python build_master.py               # merge all → master_weekly_prices.csv
+```
+
+> `fetch_trends.py` calls the Google Trends API via pytrends. It may take 2–3 minutes due to
+> rate-limit back-offs between batches.
+
+### Step B — Modelling pipeline
 
 ```bash
 python step1_vmd_decompose.py
 python step2_entropy.py
-```
-
-### Important: create `n_train.npy` (required by Steps 3–4)
-
-`step3_lasso.py` and `step4_models.py` expect `n_train.npy`, but it is not generated automatically by the current scripts.
-
-Run this once after Step 1:
-
-```bash
 python -c "import pandas as pd, numpy as np; n=int(len(pd.read_csv('master_weekly_prices.csv'))*0.8); np.save('n_train.npy', np.array([n])); print('Saved n_train.npy with n_train =', n)"
-```
-
-Then continue:
-
-```bash
 python step3_lasso.py
 python step4_models.py
 python step5_dmtest.py
@@ -131,9 +137,16 @@ This updates files inside `financial_data/` and `vix.csv`.
 
 ---
 
-## 7) Quick command block
+## 7) Quick command block (full pipeline)
 
 ```bash
+# Data (run once)
+python download_financial_data.py
+python fetch_vix.py
+python fetch_trends.py
+python build_master.py
+
+# Modelling
 python step1_vmd_decompose.py
 python step2_entropy.py
 python -c "import pandas as pd, numpy as np; n=int(len(pd.read_csv('master_weekly_prices.csv'))*0.8); np.save('n_train.npy', np.array([n])); print('Saved n_train.npy with n_train =', n)"

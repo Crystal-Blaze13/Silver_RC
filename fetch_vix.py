@@ -15,8 +15,8 @@ HOW TO RUN:
 import yfinance as yf
 import pandas as pd
 
-START_DATE = "2016-01-01"
-END_DATE   = "2026-02-20"
+START_DATE = "2000-01-01"
+END_DATE   = "2026-03-14"
 
 print("Downloading VIX data...")
 

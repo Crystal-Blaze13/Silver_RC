@@ -36,10 +36,10 @@ print(f"Training on first {n_train} observations")
 
 # ── 2. Build feature matrix ───────────────────────────────────
 # Features: lagged silver price (1-5) + external variables
-# External: gold, brent, dxy, sp500, vix, trends_raw
+# External: gold, brent, usdinr, nifty50, vix, trends_raw  (Indian market)
 # This mirrors the paper's Table 3 feature set
 
-feature_cols = ['gold', 'brent', 'dxy', 'sp500', 'vix', 'trends_raw']
+feature_cols = ['gold', 'brent', 'usdinr', 'nifty50', 'vix', 'trends_raw']
 silver       = df['silver'].values
 externals    = df[feature_cols].values
 n_obs        = len(df)

@@ -2,21 +2,24 @@ import yfinance as yf
 import pandas as pd
 import os
 
-# Configuration
-START_DATE = "2016-01-01"
-END_DATE = "2026-02-20"
+# Configuration — 25-year window, Indian market focus
+START_DATE = "2000-01-01"
+END_DATE   = "2026-03-14"
 OUTPUT_DIR = "financial_data"
 
 # Create output directory
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 # Tickers to download
+# Indian-market adaptation:
+#   sp500  → nifty50  (NSE Nifty 50 index, India's benchmark)
+#   dxy    → usdinr   (USD/INR exchange rate, key for Indian precious metals)
 tickers = {
-    "silver":    "SI=F",
-    "brent_crude": "BZ=F",
-    "sp500":     "^GSPC",
-    "dxy":       "DX-Y.NYB",
-    "gold":      "GC=F",
+    "silver":      "SI=F",       # COMEX silver futures (USD/oz)
+    "gold":        "GC=F",       # COMEX gold futures (USD/oz)
+    "brent_crude": "BZ=F",       # Brent crude oil futures
+    "nifty50":     "^NSEI",      # NSE Nifty 50 (India equity benchmark)
+    "usdinr":      "USDINR=X",   # USD/INR spot rate
 }
 
 for name, ticker in tickers.items():
