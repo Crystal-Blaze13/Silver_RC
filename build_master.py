@@ -1,106 +1,152 @@
 """
-BUILD MASTER DATASET — Indian Market (25-year weekly)
-======================================================
-Reads downloaded CSVs and merges into master_weekly_prices.csv
+BUILD MASTER DATASET — Indian Market (2008-2026, weekly)
+=========================================================
+Target variable:
+  mcx_silver  — MCX Silver price (MCXSILV Comdty, INR/kg, Bloomberg)
+                This is the actual benchmark for India's silver supply chain.
 
-Input files (run download scripts first):
-  financial_data/silver.csv
-  financial_data/gold.csv
-  financial_data/brent_crude.csv
-  financial_data/nifty50.csv       (replaces sp500)
-  financial_data/usdinr.csv        (replaces dxy)
-  vix.csv
-  trends_india.csv                 (run fetch_trends.py first)
+Feature candidates (13):
+  Lags 1-5 of mcx_silver
+  gold_usd     — CME Gold futures (yfinance GC=F, USD/oz)
+  brent        — ICE Brent crude  (yfinance BZ=F, USD/bbl)
+  usdinr       — USD/INR spot     (Bloomberg USDINR REGN Curncy)
+  nifty50      — Nifty 50 index   (Bloomberg NIFTY Index)
+  vix_india    — India VIX        (Bloomberg INVIXN Index)
+  mcx_gold     — MCX Gold         (Bloomberg MCXGOLD Comdty, INR/10g; k/M parsed)
+  geo_risk     — Geopolitical risk(Bloomberg GPRXGPRD Index)
+  trends_raw   — Google Trends    (12 India silver keywords, 0-100 normalised)
+
+Data sources:
+  Bloomberg Excel (RC DATA.xlsx, Sheet1) — k/M suffixes handled by parse_bbg()
+  yfinance CSVs  — gold_usd, brent (clean USD, no unit issues)
+  Google Trends  — trends_india.csv
 
 Output:
   master_weekly_prices.csv
-  columns: date, silver, gold, brent, usdinr, nifty50, vix, trends_raw
+  columns: date, mcx_silver, gold_usd, brent, usdinr, nifty50,
+           vix_india, mcx_gold, geo_risk, trends_raw
 
 HOW TO RUN:
   python build_master.py
 
-All prices are resampled to weekly (W-SUN) using last observation.
-Rows with any NaN are dropped. Date range is 2000-01 → 2026-03.
+All prices resampled to weekly (W-SUN), last observation.
+Date range: 2008-01-01 onwards (India VIX launched Nov 2007).
+Rows with any NaN dropped after forward-fill (limit=2).
+
+Bloomberg k/M suffix convention: k = ×1,000 ; M = ×1,000,000
 """
 
 import pandas as pd
 import numpy as np
 
-PRICE_FILES = {
-    "silver":  "financial_data/silver.csv",
-    "gold":    "financial_data/gold.csv",
-    "brent":   "financial_data/brent_crude.csv",
-    "nifty50": "financial_data/nifty50.csv",
-    "usdinr":  "financial_data/usdinr.csv",
+BLOOMBERG_FILE = "RC DATA.xlsx"
+YFINANCE_FILES = {
+    "gold_usd": "financial_data/gold.csv",
+    "brent":    "financial_data/brent_crude.csv",
 }
-VIX_FILE    = "vix.csv"
 TRENDS_FILE = "trends_india.csv"
 OUT_FILE    = "master_weekly_prices.csv"
+START_DATE  = "2008-01-01"
 
-print("=" * 55)
-print("BUILD MASTER DATASET (Indian market, 25 years)")
-print("=" * 55)
+print("=" * 60)
+print("BUILD MASTER DATASET (Indian market, 2008–2026, weekly)")
+print("=" * 60)
 
 
-def load_price(path, col_name):
+def load_yfinance(path, col_name):
     df = pd.read_csv(path, parse_dates=["date"], index_col="date")
     series = df.iloc[:, 0].rename(col_name)
-    series = pd.to_numeric(series, errors="coerce").dropna()
-    # Resample to weekly W-SUN using last observation
-    return series.resample("W-SUN").last()
+    return pd.to_numeric(series, errors="coerce").dropna().resample("W-SUN").last()
 
 
-# ── Load price series ─────────────────────────────────────────
-frames = {}
-for name, path in PRICE_FILES.items():
+def parse_bbg(val):
+    """Parse Bloomberg numeric values that may carry k (×1000) or M (×1,000,000) suffixes."""
+    if pd.isna(val):
+        return np.nan
+    s = str(val).strip().upper().replace(",", "")
+    if s.endswith("K"):
+        return float(s[:-1]) * 1_000
+    if s.endswith("M"):
+        return float(s[:-1]) * 1_000_000
     try:
-        frames[name] = load_price(path, name)
-        print(f"  Loaded {name}: {len(frames[name])} weekly rows  "
-              f"({frames[name].index[0].date()} – {frames[name].index[-1].date()})")
-    except FileNotFoundError:
-        raise FileNotFoundError(
-            f"Missing file: {path}\n"
-            f"Run download_financial_data.py first."
-        )
+        return float(s)
+    except ValueError:
+        return np.nan
 
-# ── Load VIX ──────────────────────────────────────────────────
+
+# ── Load Bloomberg Excel ───────────────────────────────────────
+print("\n[Bloomberg]")
 try:
-    vix_df = pd.read_csv(VIX_FILE, parse_dates=["date"], index_col="date")
-    vix = pd.to_numeric(vix_df.iloc[:, 0], errors="coerce").dropna().rename("vix")
-    vix_weekly = vix.resample("W-SUN").last()
-    print(f"  Loaded vix   : {len(vix_weekly)} weekly rows  "
-          f"({vix_weekly.index[0].date()} – {vix_weekly.index[-1].date()})")
+    bbg = pd.read_excel(BLOOMBERG_FILE, sheet_name="Sheet1")
 except FileNotFoundError:
-    raise FileNotFoundError("Missing vix.csv — run fetch_vix.py first.")
+    raise FileNotFoundError(f"Missing {BLOOMBERG_FILE} — place Bloomberg Excel in repo root.")
+
+bbg = bbg.rename(columns={"Unnamed: 1": "date"})
+bbg["date"] = pd.to_datetime(bbg["date"], errors="coerce")
+bbg = bbg.dropna(subset=["date"]).sort_values("date").set_index("date")
+
+# Parse all object-dtype columns to handle Bloomberg k/M suffixes
+for col in bbg.columns:
+    if bbg[col].dtype == object and col != "Unnamed: 0":
+        bbg[col] = bbg[col].apply(parse_bbg)
+
+bbg_map = {
+    "MCXSILV Comdty":    "mcx_silver",   # target — MCX Silver INR/kg
+    "MCXGOLD Comdty":    "mcx_gold",     # MCX Gold INR/10g (festival/wedding demand driver)
+    "GPRXGPRD Index":    "geo_risk",     # Geopolitical risk (India is net silver importer)
+    "USDINR REGN Curncy":"usdinr",       # USD/INR — critical for Indian commodity pricing
+    "NIFTY Index":       "nifty50",      # Indian equity benchmark
+    "INVIXN Index":      "vix_india",    # India VIX (domestic fear gauge)
+}
+
+bbg_frames = {}
+for bbg_col, col_name in bbg_map.items():
+    s = pd.to_numeric(bbg[bbg_col], errors="coerce").dropna().rename(col_name)
+    s = s.resample("W-SUN").last()
+    bbg_frames[col_name] = s
+    print(f"  {col_name:<12} {len(s):>4} weekly rows  "
+          f"{s.index[0].date()} → {s.index[-1].date()}  "
+          f"range: {s.min():.2f}–{s.max():.2f}")
+
+# ── Load yfinance CSVs ────────────────────────────────────────
+print("\n[yfinance]")
+yf_frames = {}
+for col_name, path in YFINANCE_FILES.items():
+    try:
+        s = load_yfinance(path, col_name)
+        yf_frames[col_name] = s
+        print(f"  {col_name:<10} {len(s):>4} weekly rows  "
+              f"{s.index[0].date()} → {s.index[-1].date()}  "
+              f"range: {s.min():.2f}–{s.max():.2f}")
+    except FileNotFoundError:
+        raise FileNotFoundError(f"Missing {path} — run download_financial_data.py first.")
 
 # ── Load Trends ───────────────────────────────────────────────
+print("\n[Google Trends]")
 try:
     trends_df = pd.read_csv(TRENDS_FILE, parse_dates=["date"], index_col="date")
     trends = trends_df["trends_raw"].rename("trends_raw")
-    print(f"  Loaded trends: {len(trends)} weekly rows  "
-          f"({trends.index[0].date()} – {trends.index[-1].date()})")
+    print(f"  trends_raw {len(trends):>4} weekly rows  "
+          f"{trends.index[0].date()} → {trends.index[-1].date()}")
 except FileNotFoundError:
     raise FileNotFoundError(
-        "Missing trends_india.csv — run fetch_trends.py first.\n"
-        "If pytrends is unavailable, copy your manual Trends CSV here "
-        "and rename it trends_india.csv with columns: date, trends_raw"
+        "Missing trends_india.csv — run fetch_trends.py first."
     )
 
-# ── Merge all on weekly date (inner join) ─────────────────────
-merged = pd.DataFrame(index=frames["silver"].index)
-for name, series in frames.items():
-    merged = merged.join(series, how="inner")
-merged = merged.join(vix_weekly, how="inner")
-merged = merged.join(trends, how="inner")
+# ── Merge all ─────────────────────────────────────────────────
+col_order = ["mcx_silver", "gold_usd", "brent", "usdinr", "nifty50",
+             "vix_india", "mcx_gold", "geo_risk", "trends_raw"]
+all_series = {**bbg_frames, **yf_frames, "trends_raw": trends}
 
-# Forward-fill up to 2 weeks for weekends/holidays in VIX / Nifty
+merged = pd.DataFrame({name: all_series[name] for name in col_order})
+
+# Filter to 2008 onwards
+merged = merged[merged.index >= START_DATE]
+
+# Forward-fill up to 2 weeks for holidays / non-trading days
 merged = merged.ffill(limit=2)
 merged = merged.dropna()
 merged.index.name = "date"
-
-# ── Column order matches rest of pipeline ─────────────────────
-col_order = ["silver", "gold", "brent", "usdinr", "nifty50", "vix", "trends_raw"]
-merged = merged[col_order]
 
 # ── Summary ───────────────────────────────────────────────────
 print(f"\nMerged dataset: {merged.shape[0]} weekly rows × {merged.shape[1]} columns")
@@ -109,7 +155,7 @@ print(f"Columns       : {list(merged.columns)}")
 print("\nDescriptive statistics:")
 print(merged.describe().round(2).to_string())
 
-# ── Save ─────────────────────────────────────────────────────
+# ── Save ──────────────────────────────────────────────────────
 merged.to_csv(OUT_FILE)
 print(f"\nSaved: {OUT_FILE}")
 print("NEXT: python step1_vmd_decompose.py")

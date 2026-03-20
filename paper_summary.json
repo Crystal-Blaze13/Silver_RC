@@ -1,0 +1,29 @@
+{
+  "scheme_1prime_proposed": {
+    "total_test_weeks": 107,
+    "weeks_traded": 24,
+    "weeks_traded_pct": 22.43,
+    "directionally_correct": 14,
+    "directionally_wrong": 10,
+    "conditional_DA_pct": 58.3333,
+    "binomial_pvalue_vs50": 0.2706,
+    "avg_return_correct_pct": 2.7497,
+    "avg_return_wrong_pct": -1.6818,
+    "profit_factor": 2.289,
+    "kelly_criterion_pct": 32.8494,
+    "odds_win_loss": 1.635,
+    "cumulative_return_pct": 21.5455,
+    "sharpe_annualised": 1.0242
+  },
+  "buy_and_hold_test": {
+    "period_start": "2024-03-03",
+    "period_end": "2026-03-22",
+    "n_weeks": 108,
+    "start_price_inr_kg": 82808.0,
+    "end_price_inr_kg": 231236.0,
+    "cumulative_return_pct": 179.2436,
+    "annualised_return_pct": 64.7174,
+    "sharpe_annualised": 1.6161,
+    "max_drawdown_pct": -30.6206
+  }
+}

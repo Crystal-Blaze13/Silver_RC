@@ -1,8 +1,10 @@
 """
-STEP 1 — VMD Decomposition of Silver Price
-============================================
+STEP 1 — VMD Decomposition of MCX Silver Price
+===============================================
+Target: MCX Silver (MCXSILV Comdty, INR/kg) — Indian market benchmark.
+
 Replicates:
-  - Fig 4  : Silver price time series with train/test split
+  - Fig 4  : MCX Silver price time series with train/test split
   - Fig 7  : Decomposed IMFs plot
   - Table 5: IMF frequency, period, variance ratio, correlation
 
@@ -17,7 +19,7 @@ OUTPUTS:
   fig7_imf_decomposition.png
   table5_imf_statistics.csv
   imfs.npy              <- saved IMFs, used by all later steps
-  silver_weekly.csv     <- weekly silver price, used by later steps
+  silver_weekly.csv     <- weekly MCX Silver price, used by later steps
 """
 
 import numpy as np
@@ -30,7 +32,7 @@ from vmdpy import VMD
 # SETTINGS
 # ─────────────────────────────────────────────
 DATA_FILE   = "master_weekly_prices.csv"
-TRAIN_RATIO = 0.8      # 80% train, 20% test (same as paper)
+TEST_START  = "2024-03-01"   # last ~2 years as test; rest as train
 
 # VMD hyperparameters (following paper)
 ALPHA = 2000   # bandwidth constraint
@@ -47,7 +49,7 @@ print("STEP 1: VMD Decomposition")
 print("=" * 55)
 
 df = pd.read_csv(DATA_FILE, index_col=0, parse_dates=True)
-price_weekly = df['silver'].dropna()
+price_weekly = df['mcx_silver'].dropna()
 
 print(f"Loaded {len(price_weekly)} weekly observations")
 print(f"Date range: {price_weekly.index[0].date()} -> {price_weekly.index[-1].date()}")
@@ -56,17 +58,46 @@ print(f"Date range: {price_weekly.index[0].date()} -> {price_weekly.index[-1].da
 price_weekly.to_csv("silver_weekly.csv", header=True)
 
 # ─────────────────────────────────────────────
-# 2. Train / Test split (80/20)
+# 2. Train / Test split (date-based: last 2 years as test)
 # ─────────────────────────────────────────────
-n_total = len(price_weekly)
-n_train = int(n_total * TRAIN_RATIO)
-n_test  = n_total - n_train
+split_date   = pd.Timestamp(TEST_START)
+train_prices = price_weekly[price_weekly.index < split_date]
+test_prices  = price_weekly[price_weekly.index >= split_date]
 
-train_prices = price_weekly.iloc[:n_train]
-test_prices  = price_weekly.iloc[n_train:]
+n_train = len(train_prices)
+n_test  = len(test_prices)
+n_total = len(price_weekly)
 
 print(f"\nTrain: {n_train} weeks ({train_prices.index[0].date()} → {train_prices.index[-1].date()})")
 print(f"Test : {n_test}  weeks ({test_prices.index[0].date()} → {test_prices.index[-1].date()})")
+
+# Save n_train for downstream steps (step3, step4, step6)
+np.save("n_train.npy", np.array([n_train]))
+
+# ─────────────────────────────────────────────
+# 2b. Train / Test structural break analysis
+# ─────────────────────────────────────────────
+from scipy import stats as _stats
+
+def _trend_slope(prices):
+    """Returns linear regression slope (INR/kg per week)."""
+    x = np.arange(len(prices))
+    slope, _, _, _, _ = _stats.linregress(x, prices.values)
+    return slope
+
+tr_slope  = _trend_slope(train_prices)
+te_slope  = _trend_slope(test_prices)
+slope_ratio = te_slope / tr_slope if tr_slope != 0 else float('inf')
+
+print("\n─── Structural Break Analysis ─────────────────────────")
+print(f"  Train  mean={train_prices.mean():>10,.0f} INR/kg  "
+      f"std={train_prices.std():>9,.0f}  slope={tr_slope:>+8.1f} INR/kg/week")
+print(f"  Test   mean={test_prices.mean():>10,.0f} INR/kg  "
+      f"std={test_prices.std():>9,.0f}  slope={te_slope:>+8.1f} INR/kg/week")
+print(f"  Slope ratio (test/train): {slope_ratio:.1f}×")
+print(f"  → Structural break detected: test period shows "
+      f"{slope_ratio:.1f}× stronger trend than training period")
+print("─────────────────────────────────────────────────────")
 
 # ─────────────────────────────────────────────
 # 3. Estimate K (number of IMFs)
@@ -126,11 +157,14 @@ for i in range(K):
     # Period in weeks
     period = round(1.0 / dom_freq, 4) if dom_freq > 0 else np.nan
 
+    # Trim signal to IMF length (VMD may return N-1 points)
+    sig = signal_array[:len(imf)]
+
     # Variance ratio
-    var_ratio = round(np.var(imf) / np.var(signal_array), 4)
+    var_ratio = round(np.var(imf) / np.var(sig), 4)
 
     # Correlation with original
-    corr = round(np.corrcoef(imf, signal_array)[0, 1], 4)
+    corr = round(np.corrcoef(imf, sig)[0, 1], 4)
 
     rows.append({
         "Mode":           f"IMF{i+1}",
@@ -158,9 +192,9 @@ ax.plot(test_prices.index, test_prices.values,
         color='#e74c3c', linewidth=1.2, label='Testing set')
 ax.axvline(x=train_prices.index[-1], color='black',
            linestyle='--', linewidth=0.8, alpha=0.5)
-ax.set_title('Silver Price Time Series (Weekly)', fontsize=13, fontweight='bold')
+ax.set_title('MCX Silver Price Time Series (Weekly, INR/kg)', fontsize=13, fontweight='bold')
 ax.set_xlabel('Date')
-ax.set_ylabel('Price (USD/oz)')
+ax.set_ylabel('Price (INR/kg)')
 ax.legend()
 ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y'))
 ax.xaxis.set_major_locator(mdates.YearLocator())
@@ -176,13 +210,14 @@ print("Saved: fig4_silver_price_split.png")
 print("Plotting Fig 7...")
 
 fig, axes = plt.subplots(K, 1, figsize=(14, K * 1.8), sharex=True)
+imf_index = price_weekly.index[:u_sorted.shape[1]]  # trim to IMF length (VMD returns N-1)
 for i in range(K):
     imf = u_sorted[i, :]
     ax  = axes[i]
     # Train portion in green, test in red (same as paper)
-    ax.plot(price_weekly.index[:n_train], imf[:n_train],
+    ax.plot(imf_index[:n_train], imf[:n_train],
             color='#27ae60', linewidth=0.9)
-    ax.plot(price_weekly.index[n_train:], imf[n_train:],
+    ax.plot(imf_index[n_train:], imf[n_train:],
             color='#e74c3c', linewidth=0.9)
     ax.set_ylabel(f'IMF{i+1}', fontsize=9, rotation=0,
                   labelpad=35, va='center', ha='right')
@@ -192,7 +227,7 @@ for i in range(K):
 axes[-1].xaxis.set_major_formatter(mdates.DateFormatter('%Y'))
 axes[-1].xaxis.set_major_locator(mdates.YearLocator(2))
 plt.xticks(rotation=45, fontsize=8)
-fig.suptitle('VMD Decomposed IMFs — Silver Price', fontsize=13,
+fig.suptitle('VMD Decomposed IMFs — MCX Silver Price (INR/kg)', fontsize=13,
              fontweight='bold', y=1.005)
 plt.tight_layout()
 plt.savefig("fig7_imf_decomposition.png", dpi=150, bbox_inches='tight')

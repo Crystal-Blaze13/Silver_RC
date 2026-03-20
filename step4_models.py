@@ -8,6 +8,9 @@ Outputs:  table7_single_model_errors.csv
           fig9_single_model_forecasts.png
           fig10_error_barplots.png
           predictions.pkl  (used by steps 5-6)
+
+External features lagged by 1 period to prevent look-ahead bias
+— forecasting t using data up to t-1.
 """
 
 import numpy as np
@@ -26,6 +29,7 @@ import torch
 import torch.nn as nn
 from statsmodels.tsa.arima.model import ARIMA
 from statsmodels.tsa.holtwinters import ExponentialSmoothing
+from scipy.stats import binomtest
 import itertools
 
 warnings.filterwarnings("ignore")
@@ -77,6 +81,22 @@ y_true_test = silver_price[n_train:]
 test_dates  = dates[n_train:]
 
 # ── 2. Helper: Error Metrics ───────────────────────────────────
+def directional_accuracy(y_true, y_pred):
+    """
+    DA = % of weeks where predicted direction matches actual direction.
+    Both series must be prices; changes are computed as first differences.
+    Returns (da_pct, p_value) where p_value tests H0: DA=50% via binomial test.
+    """
+    y_true = np.array(y_true)
+    y_pred = np.array(y_pred)
+    actual_dir = np.sign(np.diff(y_true))          # actual weekly changes
+    pred_dir   = np.sign(y_pred[1:] - y_true[:-1]) # predicted change vs last actual
+    correct    = np.sum(actual_dir == pred_dir)
+    n          = len(actual_dir)
+    da_pct     = correct / n * 100
+    p_val      = binomtest(correct, n, p=0.5, alternative='greater').pvalue
+    return round(da_pct, 2), round(p_val, 4)
+
 def compute_metrics(y_true, y_pred):
     y_true = np.array(y_true)
     y_pred = np.array(y_pred)
@@ -85,8 +105,10 @@ def compute_metrics(y_true, y_pred):
     mape  = np.mean(np.abs((y_true - y_pred) / y_true)) * 100
     smape = np.mean(np.abs(y_true - y_pred) /
                    ((np.abs(y_true) + np.abs(y_pred)) / 2)) * 100
+    da, da_p = directional_accuracy(y_true, y_pred)
     return {"RMSE": round(rmse, 4), "MAE": round(mae, 4),
-            "MAPE(%)": round(mape, 4), "sMAPE(%)": round(smape, 4)}
+            "MAPE(%)": round(mape, 4), "sMAPE(%)": round(smape, 4),
+            "DA(%)": da, "DA_pval": da_p}
 
 # ── 3. ARIMA helper ───────────────────────────────────────────
 def fit_arima(train_series):
@@ -341,17 +363,66 @@ for name, pred in decomp_preds.items():
 
 # ── 8. TABLE 7 — Single Model Errors ──────────────────────────
 table7 = pd.DataFrame(single_metrics).T.reset_index()
-table7.columns = ['Model', 'RMSE', 'MAE', 'MAPE(%)', 'sMAPE(%)']
+table7.columns = ['Model', 'RMSE', 'MAE', 'MAPE(%)', 'sMAPE(%)', 'DA(%)', 'DA_pval']
 table7.to_csv("table7_single_model_errors.csv", index=False)
 print("\nTable 7 — Single Model Errors:")
 print(table7.to_string(index=False))
 
 # ── 9. TABLE 8 — Decomposition Model Errors ───────────────────
 table8 = pd.DataFrame(decomp_metrics).T.reset_index()
-table8.columns = ['Model', 'RMSE', 'MAE', 'MAPE(%)', 'sMAPE(%)']
+table8.columns = ['Model', 'RMSE', 'MAE', 'MAPE(%)', 'sMAPE(%)', 'DA(%)', 'DA_pval']
 table8.to_csv("table8_decomp_model_errors.csv", index=False)
 print("\nTable 8 — Decomposition Model Errors:")
 print(table8.to_string(index=False))
+
+# ── 9b. Naive benchmarks ───────────────────────────────────────
+# Naive 1: random walk — predict last week's actual price
+naive_rw_pred   = silver_price[n_train - 1 : n_train - 1 + n_test]
+naive_rw_metrics = compute_metrics(y_true_test, naive_rw_pred)
+
+# Naive 2: always-up — in a bull market this is a hard directional benchmark
+n_up  = np.sum(np.diff(y_true_test) > 0)
+n_dir = len(np.diff(y_true_test))
+naive_up_da   = round(n_up / n_dir * 100, 2)
+naive_up_pval = round(binomtest(n_up, n_dir, p=0.5, alternative='greater').pvalue, 4)
+
+mean_test = y_true_test.mean()
+
+# ── 9c. COMBINED SUMMARY TABLE (for the paper) ────────────────
+print("\n" + "=" * 75)
+print("SUMMARY TABLE — All Models with DA (test set, n=191 weeks)")
+print(f"  Test mean price = {mean_test:,.0f} INR/kg | CV = {y_true_test.std()/mean_test*100:.1f}%")
+print("=" * 75)
+header = f"{'Model':<22} {'RMSE':>10} {'%mean':>7}  {'MAPE%':>7}  {'DA%':>7}  {'DA p-val':>9}"
+print(header)
+print("-" * 75)
+
+all_combined = {**single_metrics, **decomp_metrics}
+for name, m in all_combined.items():
+    pct = m['RMSE'] / mean_test * 100
+    sig = ("***" if m['DA_pval'] < 0.01 else
+           "**"  if m['DA_pval'] < 0.05 else
+           "*"   if m['DA_pval'] < 0.10 else "")
+    print(f"  {name:<20} {m['RMSE']:>10,.0f} {pct:>6.1f}%  {m['MAPE(%)']:>6.2f}%  "
+          f"{m['DA(%)']:>6.1f}%  {m['DA_pval']:>8.4f}{sig}")
+
+print("-" * 75)
+# Naive random walk
+pct_rw = naive_rw_metrics['RMSE'] / mean_test * 100
+sig_rw = ("***" if naive_rw_metrics['DA_pval'] < 0.01 else
+          "**"  if naive_rw_metrics['DA_pval'] < 0.05 else
+          "*"   if naive_rw_metrics['DA_pval'] < 0.10 else "")
+print(f"  {'Naive (rand. walk)':<20} {naive_rw_metrics['RMSE']:>10,.0f} {pct_rw:>6.1f}%  "
+      f"{naive_rw_metrics['MAPE(%)']:>6.2f}%  {naive_rw_metrics['DA(%)']:>6.1f}%  "
+      f"{naive_rw_metrics['DA_pval']:>8.4f}{sig_rw}")
+# Always-up naive (directional only)
+sig_up = ("***" if naive_up_pval < 0.01 else
+          "**"  if naive_up_pval < 0.05 else
+          "*"   if naive_up_pval < 0.10 else "")
+print(f"  {'Naive (always up)':<20} {'—':>10} {'—':>7}  {'—':>7}  {naive_up_da:>6.1f}%  "
+      f"{naive_up_pval:>8.4f}{sig_up}")
+print("=" * 75)
+print("  *** p<0.01, ** p<0.05, * p<0.10 vs H0: DA=50% (binomial test)")
 
 # ── 10. FIG 9 — Single Model Forecasts ────────────────────────
 print("\nPlotting Fig 9...")
@@ -423,14 +494,18 @@ print("Saved: fig10_error_barplots.png")
 # ── 12. Save all predictions for steps 5-6 ────────────────────
 with open("predictions.pkl", "wb") as f:
     pickle.dump({
-        "single_preds":   single_preds,
-        "single_metrics": single_metrics,
-        "decomp_preds":   decomp_preds,
-        "decomp_metrics": decomp_metrics,
-        "y_true_test":    y_true_test,
-        "test_dates":     test_dates,
-        "proposed_pred":  proposed_pred,
-        "n_train":        n_train,
+        "single_preds":      single_preds,
+        "single_metrics":    single_metrics,
+        "decomp_preds":      decomp_preds,
+        "decomp_metrics":    decomp_metrics,
+        "y_true_test":       y_true_test,
+        "test_dates":        test_dates,
+        "proposed_pred":     proposed_pred,
+        "n_train":           n_train,
+        "naive_rw_metrics":  naive_rw_metrics,
+        "naive_up_da":       naive_up_da,
+        "naive_up_pval":     naive_up_pval,
+        "mean_test":         mean_test,
     }, f)
 print("Saved: predictions.pkl")
 

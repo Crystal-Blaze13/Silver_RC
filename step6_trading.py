@@ -8,6 +8,9 @@ Outputs:  table10_interval_errors.csv
           fig11_interval_forecasts.png
           fig12_trading_strategy_illustration.png
           fig13_trading_evaluation.png
+
+External features lagged by 1 period to prevent look-ahead bias
+— forecasting t using data up to t-1.
 """
 
 import numpy as np
@@ -43,27 +46,16 @@ silver_all    = silver_df.iloc[:, 0].values
 all_preds = {**single_preds, **decomp_preds}
 n_test    = len(y_true)
 
-# ── 2. Interval Forecasting (simplified iMLP approach) ────────
-# Paper uses interval MLP on intraday high/low
-# We approximate using rolling prediction intervals
-# Upper bound = prediction + 1.5 * rolling std of errors
-# Lower bound = prediction - 1.5 * rolling std of errors
+# ── 2. Interval Forecasting ───────────────────────────────────
+# Asymmetric ±3% band around the point forecast.
+# Upper = forecast × 1.03, Lower = forecast × 0.97.
+# Interval constraint (Schemes 1', 2'): if the actual price from
+# the prior week falls outside this band, I_t = 0 (no trade that week).
 
 print("\nGenerating interval forecasts (Proposed method)...")
 
-# Use rolling error std from training residuals to build intervals
-train_silver = silver_all[:n_train]
-train_pred   = proposed_pred   # we'll use test predictions directly
-
-# Compute rolling std of past 8-week prediction errors as uncertainty proxy
-# (approximates the paper's BEMD/iMLP interval width)
-window = 8
-pred_series  = pd.Series(proposed_pred)
-rolling_std  = pred_series.rolling(window=window, min_periods=2).std().fillna(
-    pred_series.std())
-
-interval_upper = proposed_pred + 1.5 * rolling_std.values
-interval_lower = proposed_pred - 1.5 * rolling_std.values
+interval_upper = proposed_pred * 1.03
+interval_lower = proposed_pred * 0.97
 
 # ── 3. TABLE 10 — Interval Forecast Errors ────────────────────
 # Metrics: U (Theil), ARV, RMSDE, CR (Coverage Ratio)
@@ -147,9 +139,12 @@ def run_trading_strategy(y_true, y_pred, scheme=1,
     actual_returns = np.diff(y) / y[:-1]
 
     # Interval constraint variable I_t
+    # At trade step t (deciding on move t→t+1):
+    #   check if actual price at t is inside the predicted band at t+1.
+    #   If outside → model is misaligned with reality → skip trade (I_t = 0).
     if interval_lower is not None and interval_upper is not None:
-        inside = ((y_hat[1:] >= interval_lower[1:]) &
-                  (y_hat[1:] <= interval_upper[1:]))
+        inside = ((y[:-1] >= interval_lower[1:]) &
+                  (y[:-1] <= interval_upper[1:]))
         I_t = inside.astype(float)
     else:
         I_t = np.ones(n - 1)
@@ -234,10 +229,8 @@ for scheme in scheme_names:
         use_interval = "'" in str(scheme)
         lo = interval_lower if use_interval else None
         hi = interval_upper if use_interval else None
-        sc = 1 if str(scheme) in ["1", "1'"] else 2
-
         result = run_trading_strategy(y_true, pred,
-                                      scheme=sc,
+                                      scheme=scheme,
                                       interval_lower=lo,
                                       interval_upper=hi)
         result["Model"]  = model_name
@@ -263,10 +256,8 @@ for scheme in scheme_names:
         use_interval = "'" in str(scheme)
         lo = interval_lower if use_interval else None
         hi = interval_upper if use_interval else None
-        sc = 1 if str(scheme) in ["1", "1'"] else 2
-
         result = run_trading_strategy(y_true, pred,
-                                      scheme=sc,
+                                      scheme=scheme,
                                       interval_lower=lo,
                                       interval_upper=hi)
         result["Model"]  = model_name
@@ -277,6 +268,132 @@ table12 = pd.DataFrame(table12_rows)
 table12 = table12[cols_order]
 table12.to_csv("table12_single_trading.csv", index=False)
 print("Saved: table12_single_trading.csv")
+
+# ── Interval constraint diagnostic (Proposed model) ───────────
+print("\n" + "=" * 55)
+print("INTERVAL CONSTRAINT DIAGNOSTIC — Proposed Model")
+print("=" * 55)
+
+prop_s1  = table11[(table11['Scheme'] == 'Scheme 1')  & (table11['Model'] == 'Proposed')].iloc[0]
+prop_s1p = table11[(table11['Scheme'] == "Scheme 1'") & (table11['Model'] == 'Proposed')].iloc[0]
+
+# Count weeks where constraint blocked a trade
+# I_t = 0 when actual[t] is outside band[t+1]; that means signal would be non-zero but is zeroed out
+y_arr   = np.array(y_true)
+I_t_vec = ((y_arr[:-1] >= interval_lower[1:]) & (y_arr[:-1] <= interval_upper[1:])).astype(float)
+prop_pred_returns = np.diff(np.array(proposed_pred)) / np.array(proposed_pred)[:-1]
+# Weeks where constraint blocked: I_t == 0 AND signal would have been non-zero
+would_trade  = (prop_pred_returns != 0)
+blocked_mask = (I_t_vec == 0) & would_trade
+n_blocked    = int(blocked_mask.sum())
+
+print(f"  Scheme 1  — N transactions    : {int(prop_s1['N Transactions'])}")
+print(f"  Scheme 1' — N transactions    : {int(prop_s1p['N Transactions'])}  (must be < Scheme 1)")
+print(f"  Scheme 1  — Cumulative return : {prop_s1['Cumulative Return (%)']:.4f}%")
+print(f"  Scheme 1' — Cumulative return : {prop_s1p['Cumulative Return (%)']:.4f}%")
+print(f"  Weeks where constraint blocked a trade: {n_blocked}")
+
+assert int(prop_s1p['N Transactions']) < int(prop_s1['N Transactions']), \
+    "ERROR: Scheme 1' has >= transactions as Scheme 1 — constraint not working!"
+print("  ✓ Scheme 1' has fewer transactions than Scheme 1")
+print("=" * 55)
+
+# ── Conditional DA — Proposed model Scheme 1' ─────────────────
+from scipy.stats import binomtest
+
+print("\n" + "=" * 60)
+print("CONDITIONAL DA — Proposed Model, Scheme 1'")
+print("=" * 60)
+
+y_arr       = np.array(y_true)
+p_arr       = np.array(proposed_pred)
+act_ret     = np.diff(y_arr) / y_arr[:-1]          # actual weekly returns
+pred_ret    = np.diff(p_arr) / p_arr[:-1]           # predicted weekly returns
+
+# Interval constraint: I_t = 1 if actual[t] inside predicted band[t+1]
+I_t_s1p = ((y_arr[:-1] >= interval_lower[1:]) &
+            (y_arr[:-1] <= interval_upper[1:])).astype(float)
+
+# Scheme 1' signals: direction of pred_ret, zeroed when I_t = 0
+signals_s1p = np.where(I_t_s1p == 0, 0,
+              np.where(pred_ret > 0,  1,
+              np.where(pred_ret < 0, -1, 0)))
+
+traded_mask   = signals_s1p != 0
+correct_mask  = traded_mask & (signals_s1p * act_ret > 0)
+wrong_mask    = traded_mask & (signals_s1p * act_ret <= 0)
+
+n_total_weeks = len(act_ret)          # test weeks with a trade decision
+n_traded      = int(traded_mask.sum())
+n_correct     = int(correct_mask.sum())
+n_wrong       = int(wrong_mask.sum())
+
+cond_da   = n_correct / n_traded * 100 if n_traded > 0 else float('nan')
+binom_p   = binomtest(n_correct, n_traded, p=0.5,
+                      alternative='greater').pvalue if n_traded > 0 else float('nan')
+
+# Weekly returns on correct and wrong trades (gross, before transaction cost)
+# Return = signal * actual_return (positive = profit direction)
+gross_ret_correct = (signals_s1p[correct_mask] * act_ret[correct_mask]) * 100
+gross_ret_wrong   = (signals_s1p[wrong_mask]   * act_ret[wrong_mask])   * 100
+
+avg_ret_correct = gross_ret_correct.mean() if n_correct > 0 else float('nan')
+avg_ret_wrong   = gross_ret_wrong.mean()   if n_wrong   > 0 else float('nan')
+
+print(f"  Total test weeks (trade decisions) : {n_total_weeks}")
+print(f"  Weeks where trade was made         : {n_traded}  "
+      f"({n_traded/n_total_weeks*100:.1f}% of test)")
+print(f"  Of those — directionally correct   : {n_correct}")
+print(f"  Of those — directionally wrong     : {n_wrong}")
+print(f"  Conditional DA                     : {cond_da:.2f}%")
+print(f"  Binomial p-value vs 50%            : {binom_p:.4f}"
+      + ("  ***" if binom_p < 0.01 else "  **" if binom_p < 0.05
+         else "  *" if binom_p < 0.10 else ""))
+print(f"  Avg weekly return (correct trades) : +{avg_ret_correct:.3f}%")
+print(f"  Avg weekly return (wrong trades)   :  {avg_ret_wrong:.3f}%")
+
+# Profit Factor
+profit_factor = (avg_ret_correct * n_correct) / (abs(avg_ret_wrong) * n_wrong) \
+    if n_wrong > 0 and avg_ret_wrong != 0 else float('nan')
+
+# Kelly Criterion
+odds  = avg_ret_correct / abs(avg_ret_wrong) if avg_ret_wrong != 0 else float('nan')
+da_frac = cond_da / 100
+kelly = da_frac - (1 - da_frac) / odds if not np.isnan(odds) else float('nan')
+
+print(f"  Profit factor                      :  {profit_factor:.4f}")
+print(f"    = ({avg_ret_correct:.3f} × {n_correct}) / ({abs(avg_ret_wrong):.3f} × {n_wrong})")
+print(f"  Kelly criterion (optimal bet size) :  {kelly*100:.2f}%")
+print(f"    odds = {avg_ret_correct:.3f}/{abs(avg_ret_wrong):.3f} = {odds:.4f}")
+print(f"    Kelly = {da_frac:.4f} - ({1-da_frac:.4f}/{odds:.4f}) = {kelly:.4f}")
+print("=" * 60)
+
+# ── Write / update paper_summary.json ─────────────────────────
+import json, os
+
+summary_path = "paper_summary.json"
+summary = json.loads(open(summary_path).read()) if os.path.exists(summary_path) else {}
+
+summary["scheme_1prime_proposed"] = {
+    "total_test_weeks":        n_total_weeks,
+    "weeks_traded":            n_traded,
+    "weeks_traded_pct":        round(n_traded / n_total_weeks * 100, 2),
+    "directionally_correct":   n_correct,
+    "directionally_wrong":     n_wrong,
+    "conditional_DA_pct":      round(cond_da, 4),
+    "binomial_pvalue_vs50":    round(binom_p, 4),
+    "avg_return_correct_pct":  round(avg_ret_correct, 4),
+    "avg_return_wrong_pct":    round(avg_ret_wrong, 4),
+    "profit_factor":           round(profit_factor, 4),
+    "kelly_criterion_pct":     round(kelly * 100, 4),
+    "odds_win_loss":           round(odds, 4),
+    "cumulative_return_pct":   round(float(prop_s1p["Cumulative Return (%)"]), 4),
+    "sharpe_annualised":       round(float(prop_s1p["Sharpe (annualised)"]), 4),
+}
+
+with open(summary_path, "w") as f:
+    json.dump(summary, f, indent=2)
+print(f"\nSaved: {summary_path}")
 
 # ── 7. FIG 11 — Interval Forecasting Results ──────────────────
 print("\nPlotting Fig 11...")

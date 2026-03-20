@@ -4,6 +4,20 @@ Produces: Table 6
 Input:    imfs.npy, imf_complexity.csv, master_weekly_prices.csv, n_train.npy
 Outputs:  table6_lasso_features.csv
           lasso_selected_features.pkl  (used by steps 4-6)
+
+Target:   MCX Silver (INR/kg) — Indian market benchmark.
+
+Feature candidates (13 total):
+  Lags 1-5 of mcx_silver (autoregressive)
+  External (lagged 1 period to prevent look-ahead bias):
+    gold_usd     — CME Gold futures (USD/oz) — global safe-haven / commodity
+    brent        — ICE Brent crude (USD/bbl) — energy cost / USD demand
+    usdinr       — USD/INR — rupee is critical for Indian import-priced silver
+    nifty50      — India equity index — domestic risk appetite
+    vix_india    — India VIX (INVIXN) — domestic fear gauge
+    mcx_gold     — MCX Gold (INR/10g) — Indian festival/wedding gold-silver link
+    geo_risk     — GPRXGPRD geopolitical risk — import cost driver for India
+    trends_raw   — Google Trends (12 India silver keywords, 0-100)
 """
 
 import numpy as np
@@ -35,27 +49,30 @@ print(f"Loaded {K} IMFs, {len(df)} weekly observations")
 print(f"Training on first {n_train} observations")
 
 # ── 2. Build feature matrix ───────────────────────────────────
-# Features: lagged silver price (1-5) + external variables
-# External: gold, brent, usdinr, nifty50, vix, trends_raw  (Indian market)
-# This mirrors the paper's Table 3 feature set
+# Target: MCX Silver (INR/kg) — Indian market benchmark
+# Lags 1-5 of mcx_silver + 8 India-specific external features (lagged 1 period)
+# This mirrors the paper's Table 3 feature set, India-adapted.
 
-feature_cols = ['gold', 'brent', 'usdinr', 'nifty50', 'vix', 'trends_raw']
-silver       = df['silver'].values
+feature_cols = ['gold_usd', 'brent', 'usdinr', 'nifty50',
+                'vix_india', 'mcx_gold', 'geo_risk', 'trends_raw']
+silver       = df['mcx_silver'].values
 externals    = df[feature_cols].values
 n_obs        = len(df)
 
-print(f"\nExternal features: {feature_cols}")
-print(f"Lag features: silver_lag_1 to silver_lag_{N_LAGS}")
+# External features are lagged by 1 period: gold_usd_lag1, brent_lag1, etc.
+# This ensures we only use information available before week t when predicting t.
+ext_lag_names = [f"{c}_lag1" for c in feature_cols]
+print(f"\nMCX Silver lag features : silver_lag_1 to silver_lag_{N_LAGS}")
+print(f"External features       : {ext_lag_names}  (all lagged by 1 period)")
 
-# Build lagged silver features
-lag_names = [f"silver_lag_{i}" for i in range(1, N_LAGS + 1)]
-all_feature_names = lag_names + feature_cols
+lag_names = [f"mcx_silver_lag_{i}" for i in range(1, N_LAGS + 1)]
+all_feature_names = lag_names + ext_lag_names
 
 # Build full feature matrix (starting from row N_LAGS to have all lags)
 X_rows = []
 for t in range(N_LAGS, n_obs):
     lags = [silver[t - i] for i in range(1, N_LAGS + 1)]
-    ext  = list(externals[t])
+    ext  = list(externals[t - 1])   # lag-1: use prior week's external values
     X_rows.append(lags + ext)
 
 X_full = np.array(X_rows)   # shape: (n_obs - N_LAGS, n_features)
