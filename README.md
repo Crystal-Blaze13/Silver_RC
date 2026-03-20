@@ -25,6 +25,8 @@ over a **25-year window (2000–2026)**, replicating the methodology of Liu et a
 - `fetch_vix.py` — downloads VIX from Yahoo Finance (25-year window).
 - `fetch_trends.py` — downloads **12 India-specific silver keywords** from Google Trends via pytrends, combines into `trends_india.csv`.
 - `build_master.py` — merges all sources into `master_weekly_prices.csv` with Indian columns.
+- `fetch_trends_missing.py` — fetches the 4 Google Trends keywords that failed in the main batch run, normalises them to the anchor series, and overwrites `trends_india.csv` with all 12 keywords.
+- `merge_manual_trends.py` — alternative to the above: merges a manually downloaded `trends_missing_batch.csv` (from trends.google.com) into `trends_india.csv` using a weighted average (8 existing + 4 new).
 - `merge.py` — legacy merge helper (not used in main pipeline).
 - `test.py` — legacy returns dataset builder (not used in main pipeline).
 
@@ -129,11 +131,11 @@ This updates files inside `financial_data/` and `vix.csv`.
 
 ## 6) Notes / caveats
 
-- Use the scripts from repository root (`/Users/palakkshetrapal/rc`).
+- Run all scripts from the repository root.
 - Step 4 can be slower because of repeated ARIMA fits and LSTM training.
 - Current benchmark names include “CEEMDAN-*” approximations generated from VMD outputs + noise (as coded in `step4_models.py`).
 - If you regenerate datasets yourself, ensure `master_weekly_prices.csv` keeps the expected columns:
-  - `silver, gold, brent, dxy, sp500, vix, trends_raw`
+  - `silver, gold, brent, usdinr, nifty50, vix, trends_raw`
 
 ---
 
