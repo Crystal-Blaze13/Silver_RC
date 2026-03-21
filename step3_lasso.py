@@ -7,7 +7,7 @@ Outputs:  table6_lasso_features.csv
 
 Target:   MCX Silver (INR/kg) — Indian market benchmark.
 
-Feature candidates (13 total):
+Feature candidates (14 total):
   Lags 1-5 of mcx_silver (autoregressive)
   External (lagged 1 period to prevent look-ahead bias):
     gold_usd     — CME Gold futures (USD/oz) — global safe-haven / commodity
@@ -18,6 +18,7 @@ Feature candidates (13 total):
     mcx_gold     — MCX Gold (INR/10g) — Indian festival/wedding gold-silver link
     geo_risk     — GPRXGPRD geopolitical risk — import cost driver for India
     trends_raw   — Google Trends (12 India silver keywords, 0-100)
+    india_epu    — India Economic Policy Uncertainty Index (Baker, Bloom & Davis)
 """
 
 import numpy as np
@@ -50,11 +51,11 @@ print(f"Training on first {n_train} observations")
 
 # ── 2. Build feature matrix ───────────────────────────────────
 # Target: MCX Silver (INR/kg) — Indian market benchmark
-# Lags 1-5 of mcx_silver + 8 India-specific external features (lagged 1 period)
+# Lags 1-5 of mcx_silver + 9 India-specific external features (lagged 1 period)
 # This mirrors the paper's Table 3 feature set, India-adapted.
 
 feature_cols = ['gold_usd', 'brent', 'usdinr', 'nifty50',
-                'vix_india', 'mcx_gold', 'geo_risk', 'trends_raw']
+                'vix_india', 'mcx_gold', 'geo_risk', 'trends_raw', 'india_epu']
 silver       = df['mcx_silver'].values
 externals    = df[feature_cols].values
 n_obs        = len(df)

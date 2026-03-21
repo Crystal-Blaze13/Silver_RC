@@ -5,7 +5,7 @@ Target variable:
   mcx_silver  — MCX Silver price (MCXSILV Comdty, INR/kg, Bloomberg)
                 This is the actual benchmark for India's silver supply chain.
 
-Feature candidates (13):
+Feature candidates (14):
   Lags 1-5 of mcx_silver
   gold_usd     — CME Gold futures (yfinance GC=F, USD/oz)
   brent        — ICE Brent crude  (yfinance BZ=F, USD/bbl)
@@ -15,16 +15,18 @@ Feature candidates (13):
   mcx_gold     — MCX Gold         (Bloomberg MCXGOLD Comdty, INR/10g; k/M parsed)
   geo_risk     — Geopolitical risk(Bloomberg GPRXGPRD Index)
   trends_raw   — Google Trends    (12 India silver keywords, 0-100 normalised)
+  india_epu    — India Economic Policy Uncertainty Index (Baker, Bloom & Davis)
 
 Data sources:
   Bloomberg Excel (RC DATA.xlsx, Sheet1) — k/M suffixes handled by parse_bbg()
   yfinance CSVs  — gold_usd, brent (clean USD, no unit issues)
   Google Trends  — trends_india.csv
+  EPU data       — financial_data/India_Policy_Uncertainty_Data.xlsx (monthly → weekly ffill)
 
 Output:
   master_weekly_prices.csv
   columns: date, mcx_silver, gold_usd, brent, usdinr, nifty50,
-           vix_india, mcx_gold, geo_risk, trends_raw
+           vix_india, mcx_gold, geo_risk, trends_raw, india_epu
 
 HOW TO RUN:
   python build_master.py
@@ -45,6 +47,7 @@ YFINANCE_FILES = {
     "brent":    "financial_data/brent_crude.csv",
 }
 TRENDS_FILE = "trends_india.csv"
+EPU_FILE    = "financial_data/India_Policy_Uncertainty_Data.xlsx"
 OUT_FILE    = "master_weekly_prices.csv"
 START_DATE  = "2008-01-01"
 
@@ -133,10 +136,25 @@ except FileNotFoundError:
         "Missing trends_india.csv — run fetch_trends.py first."
     )
 
+# ── Load India EPU ────────────────────────────────────────────
+print("\n[India Economic Policy Uncertainty]")
+epu_raw = pd.read_excel(EPU_FILE)
+# Drop footer rows (source attribution text in Year column)
+epu_raw = epu_raw[pd.to_numeric(epu_raw['Year'], errors='coerce').notna()].copy()
+epu_raw['Year']  = epu_raw['Year'].astype(int)
+epu_raw['Month'] = epu_raw['Month'].astype(int)
+epu_raw['date']  = pd.to_datetime(epu_raw[['Year', 'Month']].assign(day=1))
+epu_raw = epu_raw.set_index('date')['India News-Based Policy Uncertainty Index'].rename('india_epu')
+# Resample monthly → weekly by forward-fill (each week inherits that month's reading)
+epu_weekly = epu_raw.resample('W-SUN').ffill()
+print(f"  india_epu  {len(epu_weekly):>4} weekly rows  "
+      f"{epu_weekly.index[0].date()} → {epu_weekly.index[-1].date()}  "
+      f"range: {epu_weekly.min():.2f}–{epu_weekly.max():.2f}")
+
 # ── Merge all ─────────────────────────────────────────────────
 col_order = ["mcx_silver", "gold_usd", "brent", "usdinr", "nifty50",
-             "vix_india", "mcx_gold", "geo_risk", "trends_raw"]
-all_series = {**bbg_frames, **yf_frames, "trends_raw": trends}
+             "vix_india", "mcx_gold", "geo_risk", "trends_raw", "india_epu"]
+all_series = {**bbg_frames, **yf_frames, "trends_raw": trends, "india_epu": epu_weekly}
 
 merged = pd.DataFrame({name: all_series[name] for name in col_order})
 

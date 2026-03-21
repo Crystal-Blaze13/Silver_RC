@@ -8,3 +8,4 @@ vix_india,India VIX (Volatility Index),Market Fear / Risk Appetite,NSE India,Wee
 mcx_gold,MCX Gold Continuous Futures,Domestic Precious Metal,Multi Commodity Exchange (MCX),Weekly (Friday close),INR / 10g
 geo_risk,Geopolitical Risk Index (GPR),Macro / Geopolitical,"Caldara & Iacoviello (2022), Federal Reserve",Weekly (interpolated),Index (scaled)
 trends_raw,Google Trends — India Silver Searches,Investor Attention / NLP,Google Trends API (12 India-specific keywords),Weekly,Relative search volume (0–100)
+india_epu,India Economic Policy Uncertainty Index,Macro / Policy Risk,"Baker, Bloom & Davis (2016) — policyuncertainty.com",Monthly (resampled to weekly via forward-fill),"Index (news-based, mean ~100)"
