@@ -1,0 +1,17 @@
+Model,Scheme,"Interval
+Constraint","Cost
+Filter","Weeks
+Traded","Conditional
+DA (%)","Profit
+Factor","Kelly
+Criterion","Cum. Return
+(%)",Sharpe,"Max DD
+(%)"
+Proposed (VMD-ARIMA/LSTM),Scheme 1,No,No,107,N/A,N/A,N/A,-58.26,-1.0080,72.03
+Proposed (VMD-ARIMA/LSTM),Scheme 1',Yes,No,24,58.33,2.289,32.85%,21.55,1.0242,7.24
+Proposed (VMD-ARIMA/LSTM),Scheme 2,No,Yes,59,N/A,N/A,N/A,10.04,0.3997,15.12
+Proposed (VMD-ARIMA/LSTM),Scheme 2',Yes,Yes,24,58.33,N/A,N/A,14.26,0.8036,7.24
+ES,Scheme 1',Yes,No,24,N/A,N/A,N/A,19.47,0.9368,6.91
+RF,Scheme 1',Yes,No,24,N/A,N/A,N/A,14.41,0.7250,8.05
+LSTM,Scheme 1',Yes,No,24,N/A,N/A,N/A,7.19,0.3919,12.30
+Buy-and-Hold,Passive,No,No,108,N/A,N/A,N/A,179.24,1.6161,30.62

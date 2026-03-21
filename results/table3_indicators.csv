@@ -1,0 +1,10 @@
+Variable,Full Name,Category,Source,Frequency,Unit
+mcx_silver,MCX Silver Continuous Futures,Target (Commodity),"Multi Commodity Exchange (MCX), Bloomberg",Weekly (Friday close),INR / kg
+gold_usd,International Gold Spot Price,Precious Metal / Safe Haven,LBMA via Bloomberg / Yahoo Finance,Weekly,USD / troy oz
+brent,Brent Crude Oil Spot Price,Energy / Risk Proxy,ICE / Bloomberg,Weekly,USD / barrel
+usdinr,USD/INR Exchange Rate,Macro / Currency,RBI / Bloomberg,Weekly,INR per USD
+nifty50,NIFTY 50 Index (NSE),Equity Market Sentiment,National Stock Exchange (NSE),Weekly (Friday close),Index points
+vix_india,India VIX (Volatility Index),Market Fear / Risk Appetite,NSE India,Weekly,Index (%)
+mcx_gold,MCX Gold Continuous Futures,Domestic Precious Metal,Multi Commodity Exchange (MCX),Weekly (Friday close),INR / 10g
+geo_risk,Geopolitical Risk Index (GPR),Macro / Geopolitical,"Caldara & Iacoviello (2022), Federal Reserve",Weekly (interpolated),Index (scaled)
+trends_raw,Google Trends — India Silver Searches,Investor Attention / NLP,Google Trends API (12 India-specific keywords),Weekly,Relative search volume (0–100)
