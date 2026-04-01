@@ -368,6 +368,21 @@ table7.to_csv("table7_single_model_errors.csv", index=False)
 print("\nTable 7 — Single Model Errors:")
 print(table7.to_string(index=False))
 
+# ── 8b. Naive Random Walk — appended to table7 ────────────────
+naive_rw_pred    = silver_price[n_train - 1 : n_train - 1 + n_test]
+naive_rw_metrics = compute_metrics(y_true_test, naive_rw_pred)
+naive_row = pd.DataFrame([{
+    'Model': 'Naive (RW)',
+    'RMSE': round(naive_rw_metrics['RMSE'], 4),
+    'MAE': round(naive_rw_metrics['MAE'], 4),
+    'MAPE(%)': round(naive_rw_metrics['MAPE(%)'], 4),
+    'sMAPE(%)': round(naive_rw_metrics['sMAPE(%)'], 4),
+    'DA(%)': round(naive_rw_metrics['DA(%)'], 4),
+    'DA_pval': round(naive_rw_metrics['DA_pval'], 4),
+}])
+table7 = pd.concat([table7, naive_row], ignore_index=True)
+table7.to_csv('table7_single_model_errors.csv', index=False)
+
 # ── 9. TABLE 8 — Decomposition Model Errors ───────────────────
 table8 = pd.DataFrame(decomp_metrics).T.reset_index()
 table8.columns = ['Model', 'RMSE', 'MAE', 'MAPE(%)', 'sMAPE(%)', 'DA(%)', 'DA_pval']
@@ -446,7 +461,7 @@ for idx, (name, color) in enumerate(zip(single_model_names, colors)):
     ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))
     ax.tick_params(axis='x', rotation=45, labelsize=7)
     ax.tick_params(axis='y', labelsize=7)
-    ax.set_ylabel('Price (USD/oz)', fontsize=8)
+    ax.set_ylabel('Price (INR/kg)', fontsize=8)
 
 # Hide last empty subplot if odd number
 if len(single_model_names) < len(axes):

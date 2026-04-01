@@ -151,9 +151,9 @@ def run_trading_strategy(y_true, y_pred, scheme=1,
 
     # Apply interval constraint to predicted return
     if scheme in [1, 2]:
-        IR = pred_returns            # no constraint
-    else:
-        IR = pred_returns * I_t      # zero out uncertain predictions
+        IR = pred_returns                # no constraint
+    else:  # "1'" or "2'"
+        IR = pred_returns * I_t          # zero out uncertain weeks
 
     # Generate signals
     portfolio_value = [INITIAL_CAPITAL]
@@ -165,7 +165,7 @@ def run_trading_strategy(y_true, y_pred, scheme=1,
         ar = actual_returns[t]
 
         if scheme in [1, "1'"]:
-            # Trade on direction
+            # Trade on direction only
             if pr > 0:
                 signal = 1    # long
             elif pr < 0:
@@ -173,7 +173,7 @@ def run_trading_strategy(y_true, y_pred, scheme=1,
             else:
                 signal = 0    # hold
         else:
-            # Only trade if predicted return > transaction cost
+            # Only trade if predicted return exceeds transaction cost
             if pr > tc:
                 signal = 1
             elif pr < -tc:
@@ -410,7 +410,7 @@ ax.plot(test_dates, y_true, color='#e74c3c',
 ax.set_title('Interval Forecasting Results — Silver Price',
              fontsize=13, fontweight='bold')
 ax.set_xlabel('Date')
-ax.set_ylabel('Price (USD/oz)')
+ax.set_ylabel('Price (INR/kg)')
 ax.legend(fontsize=9)
 ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))
 ax.xaxis.set_major_locator(mdates.MonthLocator(interval=3))
@@ -456,7 +456,7 @@ if outside_mask.any():
 ax.set_title('Trading Strategy Illustration — Interval Constraint',
              fontsize=13, fontweight='bold')
 ax.set_xlabel('Date')
-ax.set_ylabel('Price (USD/oz)')
+ax.set_ylabel('Price (INR/kg)')
 ax.legend(fontsize=9)
 ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))
 ax.xaxis.set_major_locator(mdates.MonthLocator(interval=2))
@@ -475,25 +475,36 @@ all_trading = pd.concat([
     table12[table12['Model'].isin(single_preds.keys())]
 ])
 
-schemes_to_plot = ['Scheme 1', "Scheme 1'", 'Scheme 2', "Scheme 2'"]
+scheme_colors = {
+    'Scheme 1': '#5B9BD5',
+    "Scheme 1'": '#E74C3C',
+    'Scheme 2': '#70AD47',
+    "Scheme 2'": '#C0504D',
+}
+
 fig, axes = plt.subplots(1, 2, figsize=(16, 6))
+all_models = list(single_preds.keys()) + list(decomp_preds.keys())
+x = np.arange(len(all_models))
+width = 0.2
 
 for ax_idx, metric in enumerate(['Cumulative Return (%)',
                                   'Sharpe (annualised)']):
     ax = axes[ax_idx]
-    for scheme_idx, scheme in enumerate(schemes_to_plot):
-        subset  = all_trading[all_trading['Scheme'] == scheme]
-        models  = subset['Model'].values
-        values  = subset[metric].values
-        x       = np.arange(len(models)) + scheme_idx * (len(models) + 1)
-        colors  = ['#3498db' if m in single_preds else '#e74c3c'
-                   for m in models]
-        ax.bar(x, values, color=colors, alpha=0.8,
-               label=scheme if ax_idx == 0 else "")
-        ax.axhline(0, color='black', linewidth=0.5)
+    for s_idx, scheme in enumerate(['Scheme 1', "Scheme 1'",
+                                     'Scheme 2', "Scheme 2'"]):
+        vals = []
+        for model in all_models:
+            row = all_trading[(all_trading['Scheme'] == scheme) &
+                              (all_trading['Model'] == model)]
+            vals.append(float(row[metric].values[0]) if len(row) > 0 else 0)
+        ax.bar(x + s_idx * width, vals, width,
+               color=scheme_colors[scheme],
+               label=scheme if ax_idx == 0 else '')
 
+    ax.set_xticks(x + width * 1.5)
+    ax.set_xticklabels(all_models, rotation=45, ha='right', fontsize=7)
+    ax.axhline(0, color='black', linewidth=0.5)
     ax.set_title(metric, fontsize=11, fontweight='bold')
-    ax.set_ylabel(metric, fontsize=9)
     ax.grid(axis='y', alpha=0.3)
     if ax_idx == 0:
         ax.legend(fontsize=8)
@@ -501,7 +512,7 @@ for ax_idx, metric in enumerate(['Cumulative Return (%)',
 fig.suptitle('Trading Performance Across Models and Schemes',
              fontsize=13, fontweight='bold')
 plt.tight_layout()
-plt.savefig("fig13_trading_evaluation.png", dpi=150, bbox_inches='tight')
+plt.savefig('fig13_trading_evaluation.png', dpi=150, bbox_inches='tight')
 plt.close()
 print("Saved: fig13_trading_evaluation.png")
 
