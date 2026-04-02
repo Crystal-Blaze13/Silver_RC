@@ -34,6 +34,9 @@ VMD,Number of modes (K),9 (log₂(N) heuristic)
 VMD,Bandwidth constraint (α),2000
 VMD,Noise tolerance (τ),0
 VMD,Convergence tolerance,1×10⁻⁷
+Approximate Entropy (ApEn),Embedding dimension (m),2
+Approximate Entropy (ApEn),Tolerance (r),0.2 × std(series)
+Approximate Entropy (ApEn),Classification threshold,ApEn(IMF) < ApEn(original) → Low complexity (ARIMA); else High complexity (LSTM)
 Trading Scheme,Interval threshold (δ),±3% of predicted price
 Trading Scheme,Transaction cost,0.05% per trade
 Trading Scheme,Position sizing,Kelly criterion (32.85%)
