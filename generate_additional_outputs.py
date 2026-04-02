@@ -23,7 +23,7 @@ from wordcloud import WordCloud
 RESULTS = "/Users/palakkshetrapal/rc/results"
 FIGS    = os.path.join(RESULTS, "figures")
 TABS    = os.path.join(RESULTS, "tables")
-DATA    = "/Users/palakkshetrapal/rc"
+DATA    = "/Users/palakkshetrapal/rc/financial_data/processed"
 
 os.makedirs(FIGS, exist_ok=True)
 os.makedirs(TABS, exist_ok=True)

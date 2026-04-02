@@ -40,7 +40,7 @@ test_dates    = data["test_dates"]
 proposed_pred = data["proposed_pred"]
 n_train       = data["n_train"]
 
-silver_df     = pd.read_csv("silver_weekly.csv", index_col=0, parse_dates=True)
+silver_df     = pd.read_csv("financial_data/processed/silver_weekly.csv", index_col=0, parse_dates=True)
 silver_all    = silver_df.iloc[:, 0].values
 
 all_preds = {**single_preds, **decomp_preds}

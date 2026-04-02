@@ -35,12 +35,12 @@ import itertools
 warnings.filterwarnings("ignore")
 
 # ── Settings ──────────────────────────────────────────────────
-DATA_FILE       = "master_weekly_prices.csv"
+DATA_FILE       = "financial_data/processed/master_weekly_prices.csv"
 IMF_FILE        = "imfs.npy"
 COMPLEXITY_FILE = "imf_complexity.csv"
 LASSO_FILE      = "lasso_selected_features.pkl"
-SILVER_FILE     = "silver_weekly.csv"
-N_TRAIN_FILE    = "n_train.npy"
+SILVER_FILE     = "financial_data/processed/silver_weekly.csv"
+N_TRAIN_FILE    = "financial_data/processed/n_train.npy"
 
 LSTM_EPOCHS     = 100
 LSTM_HIDDEN     = 64

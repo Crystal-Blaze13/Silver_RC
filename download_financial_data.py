@@ -5,7 +5,7 @@ import os
 # Configuration — 25-year window, Indian market focus
 START_DATE = "2000-01-01"
 END_DATE   = "2026-03-14"
-OUTPUT_DIR = "financial_data"
+OUTPUT_DIR = "financial_data/pre_processed"
 
 # Create output directory
 os.makedirs(OUTPUT_DIR, exist_ok=True)

@@ -21,10 +21,10 @@ over a **25-year window (2000–2026)**, replicating the methodology of Liu et a
 ## 1) Project files
 
 ### Data collection / preparation
-- `download_financial_data.py` — downloads `silver`, `gold`, `brent`, **`nifty50`**, **`usdinr`** from Yahoo Finance (25-year window).
+- `download_financial_data.py` — downloads `silver`, `gold`, `brent`, **`nifty50`**, **`usdinr`** from Yahoo Finance into `financial_data/pre_processed/` (25-year window).
 - `fetch_vix.py` — downloads VIX from Yahoo Finance (25-year window).
 - `fetch_trends.py` — downloads **12 India-specific silver keywords** from Google Trends via pytrends, combines into `trends_india.csv`.
-- `build_master.py` — merges all sources into `master_weekly_prices.csv` with Indian columns.
+- `build_master.py` — merges all sources into `financial_data/processed/master_weekly_prices.csv` with Indian columns.
 - `fetch_trends_missing.py` — fetches the 4 Google Trends keywords that failed in the main batch run, normalises them to the anchor series, and overwrites `trends_india.csv` with all 12 keywords.
 - `merge_manual_trends.py` — alternative to the above: merges a manually downloaded `trends_missing_batch.csv` (from trends.google.com) into `trends_india.csv` using a weighted average (8 existing + 4 new).
 - `merge.py` — legacy merge helper (not used in main pipeline).
@@ -39,7 +39,7 @@ over a **25-year window (2000–2026)**, replicating the methodology of Liu et a
 - `step6_trading.py`
 
 ### Core dataset
-- `master_weekly_prices.csv` (columns: `date,silver,gold,brent,usdinr,nifty50,vix,trends_raw`)
+- `financial_data/processed/master_weekly_prices.csv` (columns: `date,silver,gold,brent,usdinr,nifty50,vix,trends_raw`)
 
 ---
 
@@ -125,7 +125,7 @@ python download_financial_data.py
 python fetch_vix.py
 ```
 
-This updates files inside `financial_data/` and `vix.csv`.
+This updates files inside `financial_data/pre_processed/` and `vix.csv`.
 
 ---
 

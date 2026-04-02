@@ -21,7 +21,7 @@ Data sources:
   Bloomberg Excel (RC DATA.xlsx, Sheet1) — k/M suffixes handled by parse_bbg()
   yfinance CSVs  — gold_usd, brent (clean USD, no unit issues)
   Google Trends  — trends_india.csv
-  EPU data       — financial_data/India_Policy_Uncertainty_Data.xlsx (monthly → weekly ffill)
+    EPU data       — financial_data/pre_processed/India_Policy_Uncertainty_Data.xlsx (monthly → weekly ffill)
 
 Output:
   master_weekly_prices.csv
@@ -42,13 +42,15 @@ import pandas as pd
 import numpy as np
 
 BLOOMBERG_FILE = "RC DATA.xlsx"
+RAW_DATA_DIR = "financial_data/pre_processed"
+PROCESSED_DATA_DIR = "financial_data/processed"
 YFINANCE_FILES = {
-    "gold_usd": "financial_data/gold.csv",
-    "brent":    "financial_data/brent_crude.csv",
+    "gold_usd": f"{RAW_DATA_DIR}/gold.csv",
+    "brent":    f"{RAW_DATA_DIR}/brent_crude.csv",
 }
 TRENDS_FILE = "trends_india.csv"
-EPU_FILE    = "financial_data/India_Policy_Uncertainty_Data.xlsx"
-OUT_FILE    = "master_weekly_prices.csv"
+EPU_FILE    = f"{RAW_DATA_DIR}/India_Policy_Uncertainty_Data.xlsx"
+OUT_FILE    = f"{PROCESSED_DATA_DIR}/master_weekly_prices.csv"
 START_DATE  = "2008-01-01"
 
 print("=" * 60)

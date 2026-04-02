@@ -31,7 +31,9 @@ from vmdpy import VMD
 # ─────────────────────────────────────────────
 # SETTINGS
 # ─────────────────────────────────────────────
-DATA_FILE   = "master_weekly_prices.csv"
+DATA_FILE   = "financial_data/processed/master_weekly_prices.csv"
+SILVER_FILE = "financial_data/processed/silver_weekly.csv"
+N_TRAIN_FILE = "financial_data/processed/n_train.npy"
 TEST_START  = "2024-03-01"   # last ~2 years as test; rest as train
 
 # VMD hyperparameters (following paper)
@@ -55,7 +57,7 @@ print(f"Loaded {len(price_weekly)} weekly observations")
 print(f"Date range: {price_weekly.index[0].date()} -> {price_weekly.index[-1].date()}")
 
 # Save silver weekly for later steps
-price_weekly.to_csv("silver_weekly.csv", header=True)
+price_weekly.to_csv(SILVER_FILE, header=True)
 
 # ─────────────────────────────────────────────
 # 2. Train / Test split (date-based: last 2 years as test)
@@ -72,7 +74,7 @@ print(f"\nTrain: {n_train} weeks ({train_prices.index[0].date()} → {train_pric
 print(f"Test : {n_test}  weeks ({test_prices.index[0].date()} → {test_prices.index[-1].date()})")
 
 # Save n_train for downstream steps (step3, step4, step6)
-np.save("n_train.npy", np.array([n_train]))
+np.save(N_TRAIN_FILE, np.array([n_train]))
 
 # ─────────────────────────────────────────────
 # 2b. Train / Test structural break analysis

@@ -28,10 +28,10 @@ from sklearn.linear_model import LassoCV
 from sklearn.preprocessing import StandardScaler
 
 # ── Settings ──────────────────────────────────────────────────
-DATA_FILE       = "master_weekly_prices.csv"
+DATA_FILE       = "financial_data/processed/master_weekly_prices.csv"
 IMF_FILE        = "imfs.npy"
 COMPLEXITY_FILE = "imf_complexity.csv"
-N_TRAIN_FILE    = "n_train.npy"
+N_TRAIN_FILE    = "financial_data/processed/n_train.npy"
 N_LAGS          = 5    # paper uses up to 5 lagged values
 CV_FOLDS        = 5    # cross-validation folds for LassoCV
 

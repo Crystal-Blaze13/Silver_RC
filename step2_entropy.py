@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 
 # ── Settings ──────────────────────────────────────────────────
 IMF_FILE    = "imfs.npy"
-SILVER_FILE = "silver_weekly.csv"
+SILVER_FILE = "financial_data/processed/silver_weekly.csv"
 AE_M        = 2      # embedding dimension (standard value)
 AE_R_COEF   = 0.2   # r = 0.2 * std(series) — standard in literature
 
