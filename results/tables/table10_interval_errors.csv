@@ -1,2 +1,2 @@
-,U,ARV,RMSDE,CR
-Silver (Proposed),0.1014,1.2577,63708.6107,0.2816
+,Coverage,AvgWidth,RMSE_center
+Silver — Return Conformal,0.6961,0.104486,0.061422

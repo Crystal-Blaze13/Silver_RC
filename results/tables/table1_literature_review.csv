@@ -1,2 +1,0 @@
-Author(s),Year,Journal,Asset,Method,Error Metric(s)
-Liu et al.,2025,Energy Economics,MCX Silver (adapted),VMD-ARIMA/LSTM + Trading,"RMSE, MAE, DA"
