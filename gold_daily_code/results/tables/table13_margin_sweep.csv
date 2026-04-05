@@ -1,0 +1,7 @@
+Rule,Margin,Cumulative Return (%),Sharpe (annualised),N Trades,N Blocked,Hit Rate (%)
+Scheme 1,0.0,1790.2199,7.2005,171,0,79.23
+Buy & Hold,,123.6276,1.8869,540,0,
+Scheme 1',0.03,0.0,0.0,0,540,
+Scheme 1',0.05,0.0,0.0,0,540,
+Scheme 1',0.07,0.0,0.0,0,540,
+Scheme 1',0.1,0.0,0.0,0,540,

@@ -1,0 +1,12 @@
+Category,Variable,Description
+Target variable,mcx_gold,Daily gold price in INR/10g (forecast target)
+Financial market,gold_usd,International gold price influencing domestic gold prices
+Financial market,brent,Crude oil price proxy affecting commodity markets
+Financial market,usdinr,Exchange rate impacting domestic gold pricing
+Financial market,mcx_silver,Domestic silver price capturing cross-metal effects
+Equity market,nifty50,Indian stock market index representing overall market conditions
+Equity market,vix_india,Market volatility index capturing uncertainty
+Policy / macroeconomic,india_epu,Economic policy uncertainty in India
+Policy / macroeconomic,geo_risk,Global geopolitical risk indicator
+Public attention,trends_raw,Google Trends index for gold-related searches
+Sentiment,sentiment_gold,News-based sentiment score derived from GDELT data

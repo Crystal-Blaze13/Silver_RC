@@ -1,0 +1,11 @@
+Model,Type,Role in Study,Application
+ARIMA,Statistical model,Low-frequency IMF forecasting,Models long-term trends
+LSTM,Deep learning model,High-frequency IMF forecasting,Captures nonlinear patterns
+SVR,Machine learning model,Baseline comparison,Regression benchmark
+Random Forest,Ensemble model,Baseline comparison,Nonlinear regression benchmark
+MLP,Neural network,Baseline comparison,General predictive model
+ELM,Neural network,Baseline comparison,Fast learning model
+VMD,Signal decomposition,Preprocessing step,Decomposes price into IMFs
+LASSO,Feature selection,Dimensionality reduction,Selects relevant predictors
+Diebold-Mariano test,Statistical test,Model comparison,Evaluates forecast superiority
+iMLP (Interval MLP),Deep learning model,Interval forecasting,Predicts high-low bounds

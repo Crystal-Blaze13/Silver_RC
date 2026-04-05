@@ -1,0 +1,5 @@
+Model,Scheme,Cumulative Return (%),Avg Daily Return (%),Maximum Drawdown (%),Sharpe (annualised),N Trades,N Blocked,Hit Rate (%),DA_pvalue,DA_stars,Avg ret correct (%),Avg ret wrong (%),Profit factor,Kelly criterion (%)
+Proposed,1,1790.2199,0.5529,-6.3459,7.2005,171,0,79.23,0.0,***,1.007,-0.413,2.4388,70.72
+Proposed,1',197.6366,0.2037,-1.3834,5.784,192,269,81.39,0.0,***,0.725,-0.309,2.3443,73.44
+Proposed,2,1790.7326,0.5529,-6.3459,7.2329,203,0,81.36,0.0,***,1.035,-0.42,2.4635,73.79
+Proposed,2',196.7692,0.2032,-1.3834,5.8246,195,269,82.94,0.0,***,0.756,-0.286,2.6374,76.47

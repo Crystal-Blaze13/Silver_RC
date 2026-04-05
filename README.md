@@ -114,20 +114,19 @@ Weekly conformal prediction achieves near-exact target coverage (69.6% vs 70%). 
 
 ```
 rc/
-├── preprocessed_data/
-│   └── processed/          # shared raw inputs (commodity CSVs, Bloomberg xlsx, GDELT, trends)
-├── daily/
-│   ├── code/               # daily pipeline scripts
-│   ├── processed/          # daily intermediates (master_daily_prices.csv, imfs_daily.npy, etc.)
+├── common_data/            # shared raw inputs (commodity CSVs, Bloomberg xlsx, GDELT, trends)
+├── silver/
+│   ├── code/               # silver daily pipeline scripts
+│   ├── data/               # silver intermediates (master_daily_prices.csv, imfs_daily.npy, etc.)
 │   └── results/
-│       ├── figures/        # daily plots
-│       └── tables/         # daily result CSVs and JSON
-└── weekly/
-    ├── code/               # weekly pipeline scripts
-    ├── processed/          # weekly intermediates (master_weekly_prices.csv, imfs.npy, etc.)
+│       ├── figures/        # silver plots
+│       └── tables/         # silver result CSVs and JSON
+└── gold_daily_code/
+    ├── code/               # gold daily pipeline scripts
+    ├── data/               # gold intermediates
     └── results/
-        ├── figures/        # weekly plots
-        └── tables/         # weekly result CSVs and JSON
+        ├── figures/        # gold plots
+        └── tables/         # gold result CSVs and JSON
 ```
 
-See [daily/README.md](daily/README.md) and [weekly/README.md](weekly/README.md) for per-pipeline detail.
+See [silver/README.md](silver/README.md) for silver pipeline detail.

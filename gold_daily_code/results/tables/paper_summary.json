@@ -1,0 +1,54 @@
+{
+  "scheme_1prime_proposed_daily_v8_imlp": {
+    "interval_method": "calibrated_iMLP_on_HighLow_v8_fixed",
+    "imlp_epochs_run": 94,
+    "imlp_val_loss": 0.956027,
+    "interval_metrics_cal": {
+      "U": 8.7098,
+      "ARV": 0.8223,
+      "RMSDE": 12.480431,
+      "CR": 0.1419
+    },
+    "interval_metrics_test": {
+      "U": 2.27,
+      "ARV": 0.0186,
+      "RMSDE": 12.540784,
+      "CR": 0.5536
+    },
+    "n_test_steps": 540,
+    "n_uncertain_blocked": 540,
+    "n_traded_active": 0,
+    "n_correct_active": 0,
+    "DA_active_pct": NaN,
+    "DA_pvalue": NaN,
+    "cumulative_return_pct": 0.0,
+    "sharpe_annualised": 0.0,
+    "max_drawdown_pct": 0.0
+  },
+  "scheme_1prime_proposed_daily_v9_imlp": {
+    "interval_method": "calibrated_iMLP_width_filter_v9_fixed",
+    "imlp_epochs_run": 94,
+    "imlp_val_loss": 0.956027,
+    "interval_metrics_cal": {
+      "U": 8.7259,
+      "ARV": 0.8253,
+      "RMSDE": 12.50638,
+      "CR": 0.1411
+    },
+    "interval_metrics_test": {
+      "U": 4.143,
+      "ARV": 0.0621,
+      "RMSDE": 22.432322,
+      "CR": 0.7757
+    },
+    "n_test_steps": 540,
+    "n_uncertain_blocked": 269,
+    "n_traded_active": 231,
+    "n_correct_active": 188,
+    "DA_active_pct": 81.3853,
+    "DA_pvalue": 0.0,
+    "cumulative_return_pct": 197.6366,
+    "sharpe_annualised": 5.784,
+    "max_drawdown_pct": -1.3834
+  }
+}

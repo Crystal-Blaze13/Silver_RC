@@ -1,0 +1,6 @@
+Reference,Market,Model,External Factors,Decomposition,Trading
+Liu et al. (2025),China Carbon Market,ARIMA + LSTM + iMLP,Energy + Financial + FX + Sentiment + Trends,VMD,Yes
+Wang et al. (2026),Bitcoin Market,CNN + LSTM + ML models,OHLCV features,VMD,No
+Maghyereh and Abdoh (2022),Precious Metals (Gold/Silver),Econometric + Sentiment models,News sentiment + macro factors,None,No
+Zhu (2025),Chinese Stock Market,DNN latent factor model,Firm characteristics,None,No
+This Study (Silver Forecasting),India Silver Market,ARIMA + LSTM + iMLP,Financial + Macro + Sentiment + Trends,VMD,Yes
