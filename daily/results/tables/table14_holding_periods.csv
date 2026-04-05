@@ -1,0 +1,5 @@
+Rule,Hold (days),Cumulative Return (%),Sharpe (annualised),N Trades,Avg Holding (days),Hit Rate (%)
+Daily (Scheme 1),1,11507.1207,6.5037,167,1,82.58
+1 week (5 days),5,1060.2799,3.2478,167,5,82.58
+1 month (20 days),20,22.402,0.4294,167,20,82.58
+Buy & Hold,540,136.5551,1.2637,1,540,

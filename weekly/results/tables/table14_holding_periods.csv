@@ -1,0 +1,5 @@
+Rule,Hold (weeks),Cumulative Return (%),Sharpe (annualised),N Trades,Avg Holding Duration (weeks),Signal Dist
+Scheme 1 (weekly),1,180.7843,1.686,102,1.0,"{-1.0: 40, 1.0: 62}"
+Holding 2 weeks,2,246.4913,2.01,51,2.0,"{-1.0: 42, 1.0: 60}"
+Holding 4 weeks,4,250.3451,2.0244,26,3.9231,"{-1.0: 40, 1.0: 62}"
+Buy & Hold,102,164.3456,1.6095,1,102.0,{1.0: 102}

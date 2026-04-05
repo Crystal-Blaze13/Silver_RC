@@ -1,5 +1,0 @@
-Strategy,Cumulative Return (%),Annualized Sharpe,Maximum Drawdown (%),Calmar Ratio,N Trades,Turnover,Avg Holding Period (weeks),Total Transaction Cost Drag (%),Hit Rate (%),Signal Dist
-Scheme 1 weekly,180.7843,1.686,-22.7618,3.0433,102,1.0,1.0,14.5523,64.71,"{-1.0: 40, 1.0: 62}"
-2-week holding,246.4913,2.01,-20.0511,4.41,51,0.5,2.0,8.837,64.71,"{-1.0: 42, 1.0: 60}"
-4-week holding,250.3451,2.0244,-11.2369,7.964,26,0.2549,3.9231,4.5984,60.78,"{-1.0: 40, 1.0: 62}"
-Buy & Hold,164.3456,1.6095,-31.3385,2.0468,1,0.0098,102.0,0.1335,68.63,{1.0: 102}
