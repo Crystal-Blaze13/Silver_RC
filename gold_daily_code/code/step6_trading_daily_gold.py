@@ -733,6 +733,26 @@ with open(summary_path, "w") as f:
     json.dump(summary, f, indent=2)
 print(f"\nSaved: {summary_path}")
 
+# Save per-day proposed/interval/trading series for Step 7 sliding-window analysis
+prev_sig_s1p = np.concatenate([[0.0], sig_s1p[:-1]])
+tc_s1p = np.abs(sig_s1p - prev_sig_s1p) * TRANSACTION_COST
+pnl_s1p = sig_s1p * a - tc_s1p
+daily_step7 = pd.DataFrame({
+    "date": pd.to_datetime(test_dates[1:n_steps+1]),
+    "actual_close": y_true[1:n_steps+1],
+    "point_forecast": proposed_pred[1:n_steps+1],
+    "pred_lo": pred_lo_test[1:n_steps+1],
+    "pred_hi": pred_hi_test[1:n_steps+1],
+    "actual_ret": a,
+    "pred_ret": p,
+    "signal_scheme_1prime": sig_s1p,
+    "blocked": uncertain_tr[:n_steps].astype(int),
+    "tc_cost": tc_s1p,
+    "pnl": pnl_s1p,
+})
+daily_step7.to_csv("../results/tables/proposed_daily_series.csv", index=False)
+print("Saved: ../results/tables/proposed_daily_series.csv")
+
 
 # ── 13. Figures ────────────────────────────────────────────────────────────────
 print("\nPlotting figures…")

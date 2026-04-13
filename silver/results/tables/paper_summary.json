@@ -106,27 +106,27 @@
   "scheme_1prime_proposed_daily_v8_imlp": {
     "interval_method": "calibrated_iMLP_on_HighLow_v8_fixed",
     "imlp_epochs_run": 114,
-    "imlp_val_loss": 0.963132,
+    "imlp_val_loss": 0.458644,
     "interval_metrics_cal": {
-      "U": 8.1471,
-      "ARV": 2.0459,
-      "RMSDE": 32.905189,
-      "CR": 0.0635
+      "U": 5.9375,
+      "ARV": 0.6211,
+      "RMSDE": 20.735974,
+      "CR": 0.2277
     },
     "interval_metrics_test": {
-      "U": 3.2661,
-      "ARV": 0.1361,
-      "RMSDE": 74.95513,
-      "CR": 0.0346
+      "U": 2.5067,
+      "ARV": 0.0763,
+      "RMSDE": 60.281289,
+      "CR": 0.1126
     },
     "n_test_steps": 540,
-    "n_uncertain_blocked": 458,
-    "n_traded_active": 49,
-    "n_correct_active": 37,
-    "DA_active_pct": 75.5102,
-    "DA_pvalue": 0.0002,
-    "cumulative_return_pct": 198.0465,
-    "sharpe_annualised": 2.2132,
-    "max_drawdown_pct": -2.3532
+    "n_uncertain_blocked": 425,
+    "n_traded_active": 68,
+    "n_correct_active": 55,
+    "DA_active_pct": 80.8824,
+    "DA_pvalue": 0.0,
+    "cumulative_return_pct": 133.611,
+    "sharpe_annualised": 3.0915,
+    "max_drawdown_pct": -1.2594
   }
 }
